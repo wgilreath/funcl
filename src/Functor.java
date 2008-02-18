@@ -1,8 +1,5 @@
-import java.io.File;
-import java.math.BigDecimal;
-
 /*
- * @(#)Functor.java   1.00   2008-01-28
+ * @(#)Functor.java          1.00   2008-01-28
  *
  * Title: Funtor - mathematical abstraction of a function.
  *
@@ -21,10 +18,18 @@ import java.math.BigDecimal;
  *
  */
 
-public class Functor
+//add DUMP - dumps state of FunCL VM without logging it
+
+package funcl;
+
+import java.io.File;
+import java.math.BigDecimal;
+
+public final class Functor
 {
     private Functor() {}
 
+  
     //functor definition constants FNV hash of functor name
     public final static int _PROMPT = -1778443337 ;  //interal command functor ":PROMPT"
 
@@ -103,7 +108,7 @@ public class Functor
     public final static boolean isExternalFunctor(final String functor)
     {
         //check for external functor: functor + ".func" (or .fcl??)
-        File functorFile = new File(functor+FunCL.FUNCTOR_EXTENSION);
+        File functorFile = new File(functor+FunCLConst.FUNCL_EXTENSION);
         return functorFile.exists();
     }//end isExternalFunctor
 
@@ -254,16 +259,16 @@ public class Functor
         if(funcl.paramStack.size() == 1)
         {
             //check if file exists, else error unless clobber? 12-16-2007
-            funcl.openWriterFile(funcl.paramStack.remove(0)+FunCL.FUNCTOR_EXTENSION); //.fncl to named constant??
+            funcl.openWriterFile(funcl.paramStack.remove(0)+FunCLConst.FUNCL_EXTENSION);
             funcl.writeEvalToFile();
 
             funcl.defineFlag = true;
         }
         else
         {
-            System.err.println();
-            System.err.println("Functor Error: DEF define functor requires 1-parameter.");
-            System.err.println();
+            FunCL.err("\n\r");
+            FunCL.errln("Functor Error: DEF define functor requires 1-parameter.");
+            FunCL.err("\n\r");
         }//end if
 
     }//end DEF
@@ -272,7 +277,7 @@ public class Functor
     {
        if(funcl.paramStack.isEmpty())
        {
-           System.err.println("Functor Error: DUP functor param stack is empty.");
+           FunCL.errln("Functor Error: DUP functor param stack is empty.");
        }
        else
        {
@@ -290,7 +295,7 @@ public class Functor
     {
         if(funcl.paramStack.isEmpty())
         {
-            System.err.println("Functor Error: :PROMPT functor - param stack is empty so cannot change prompt.");
+            FunCL.errln("Functor Error: :PROMPT functor - param stack is empty so cannot change prompt.");
             return;
         }//end if
 
@@ -358,7 +363,7 @@ public class Functor
     {
         if(funcl.paramStack.isEmpty())
         {
-            System.err.println("Functor Error: PUSHX functor param stack is empty.");
+            FunCL.errln("Functor Error: PUSHX functor param stack is empty.");
         }
         else
         {
@@ -372,7 +377,7 @@ public class Functor
     {
         if(funcl.exprStack.isEmpty())
         {
-            System.err.println("Functor Error: POPX functor param stack is empty.");
+            FunCL.errln("Functor Error: POPX functor param stack is empty.");
         }
         else
         {
@@ -400,7 +405,7 @@ public class Functor
         }
         else
         {
-            System.err.println("Functor Error: EQ equal functor requires 2-parameters.");
+            FunCL.errln("Functor Error: EQ equal functor requires 2-parameters.");
         }//end if
     }//end EQ
 
@@ -422,7 +427,7 @@ public class Functor
         }
         else
         {
-            System.err.println("Functor Error: NE not equal functor requires 2-parameters.");
+            FunCL.errln("Functor Error: NE not equal functor requires 2-parameters.");
         }//end if
     }//end NE
 
@@ -430,11 +435,11 @@ public class Functor
     {
         if(funcl.paramStack.isEmpty())
         {
-            System.out.println("");
+            FunCL.putln("");
         }
         else
         {
-            System.out.println(funcl.paramStack.remove(0));
+            FunCL.putln(funcl.paramStack.remove(0));
         }//end if
     }//end ECHO
 
@@ -442,11 +447,11 @@ public class Functor
     {
         if(funcl.paramStack.isEmpty())
         {
-            System.out.println("");
+            FunCL.putln("");
         }
         else
         {
-            System.out.println(funcl.paramStack.get(0));
+            FunCL.putln(funcl.paramStack.get(0));
         }//end if
     }//end SAY
 
@@ -459,7 +464,7 @@ public class Functor
     {
         if(funcl.paramStack.isEmpty())
         {
-            System.out.println("");
+            FunCL.putln("");
             return;
         }//end if
 
@@ -467,7 +472,7 @@ public class Functor
 
         for(int x=0;x<size;x++)
         {
-            System.out.println(funcl.paramStack.remove(0));
+            FunCL.putln(funcl.paramStack.remove(0));
         }//end for
 
     }//end ECHOP
@@ -488,7 +493,7 @@ public class Functor
 
         if(funcl.paramStack.isEmpty())
         {
-            System.err.println("Functor Error: MUL multiply functor requires at least 1-parameter.");
+            FunCL.errln("Functor Error: MUL multiply functor requires at least 1-parameter.");
             return;
         }//end if
 
@@ -496,7 +501,7 @@ public class Functor
         {
             if(!Functor.isNum(funcl.paramStack.get(0)))
             {
-                System.err.println("Functor Error: MUL multiply functor parameter: "+funcl.paramStack.get(0)+" is not a number!");
+                FunCL.errln("Functor Error: MUL multiply functor parameter: "+funcl.paramStack.get(0)+" is not a number!");
             }//end if
             return; //multiply single number => return number on param stack
         }//end if
@@ -512,12 +517,12 @@ public class Functor
             }
             else
             {
-                  System.err.println("Functor Error: MUL multiply functor parameter: "+funcl.paramStack.get(0)+" is not a number!");
+                  FunCL.errln("Functor Error: MUL multiply functor parameter: "+funcl.paramStack.get(0)+" is not a number!");
             }//end if
         }
         else
         {
-            System.err.println("Functor Error: MUL multiply functor parameter: "+funcl.paramStack.get(0)+" is not a number!");
+            FunCL.errln("Functor Error: MUL multiply functor parameter: "+funcl.paramStack.get(0)+" is not a number!");
         }//end if
 
     }//end MUL
@@ -530,7 +535,7 @@ public class Functor
 
         if(funcl.paramStack.isEmpty())
         {
-            System.err.println("Functor Error: ADD addition functor: param stack is empty!");
+            FunCL.errln("Functor Error: ADD addition functor: param stack is empty!");
             return;
         }//end if
 
@@ -538,7 +543,7 @@ public class Functor
         {
             if(!Functor.isNum(funcl.paramStack.get(0)))
             {
-                System.err.println("Functor Error: ADD addition functor parameter: "+funcl.paramStack.get(0)+" is not a number!");
+                FunCL.errln("Functor Error: ADD addition functor parameter: "+funcl.paramStack.get(0)+" is not a number!");
             }//end if
             return; //multiply single number => return number on param stack
         }//end if
@@ -554,12 +559,12 @@ public class Functor
             }
             else
             {
-                  System.err.println("Functor Error: ADD addition functor parameter: "+funcl.paramStack.get(0)+" is not a number!");
+                  FunCL.errln("Functor Error: ADD addition functor parameter: "+funcl.paramStack.get(0)+" is not a number!");
             }//end if
         }
         else
         {
-            System.err.println("Functor Error: ADD addition functor parameter: "+funcl.paramStack.get(0)+" is not a number!");
+            FunCL.errln("Functor Error: ADD addition functor parameter: "+funcl.paramStack.get(0)+" is not a number!");
         }//end if
 
     }//end ADD
@@ -573,7 +578,7 @@ public class Functor
 
         if(funcl.paramStack.isEmpty())
         {
-            System.err.println("Functor Error: INC increment functor: param stack is empty!");
+            FunCL.errln("Functor Error: INC increment functor: param stack is empty!");
             return;
         }//end if
 
@@ -581,7 +586,7 @@ public class Functor
         {
             if(!Functor.isNum(funcl.paramStack.get(0)))
             {
-                System.err.println("Functor Error: INC increment functor parameter: "+funcl.paramStack.get(0)+" is not a number!");
+                FunCL.errln("Functor Error: INC increment functor parameter: "+funcl.paramStack.get(0)+" is not a number!");
                 return;
             }//end if
          }//end if
@@ -594,7 +599,7 @@ public class Functor
         }
         else
         {
-            System.err.println("Functor Error: INC increment functor parameter: "+funcl.paramStack.get(0)+" is not a number!");
+            FunCL.errln("Functor Error: INC increment functor parameter: "+funcl.paramStack.get(0)+" is not a number!");
         }//end if
 
     }//end INC
@@ -606,7 +611,7 @@ public class Functor
 
         if(funcl.paramStack.isEmpty())
         {
-            System.err.println("Functor Error: DEC decrement functor: param stack is empty!");
+            FunCL.errln("Functor Error: DEC decrement functor: param stack is empty!");
             return;
         }//end if
 
@@ -614,7 +619,7 @@ public class Functor
         {
             if(!Functor.isNum(funcl.paramStack.get(0)))
             {
-                System.err.println("Functor Error: DEC decrement functor parameter: "+funcl.paramStack.get(0)+" is not a number!");
+                FunCL.errln("Functor Error: DEC decrement functor parameter: "+funcl.paramStack.get(0)+" is not a number!");
                 return;
             }//end if
          }//end if
@@ -627,17 +632,16 @@ public class Functor
         }
         else
         {
-            System.err.println("Functor Error: DEC decrement functor parameter: "+funcl.paramStack.get(0)+" is not a number!");
+            FunCL.putln("Functor Error: DEC decrement functor parameter: "+funcl.paramStack.get(0)+" is not a number!");
         }//end if
 
     }//end DEC
 
     public final static void WHEN(FunCL funcl)
     {
-
         if(funcl.boolStack.isEmpty())
         {
-            System.err.println("Functor Error: WHEN conditional functor no Boolean on the bool stack.");
+            FunCL.errln("Functor Error: WHEN conditional functor no Boolean on the bool stack.");
         }//end if
 
         String boolVal = funcl.boolStack.pop();
@@ -653,7 +657,7 @@ public class Functor
     {
         if(funcl.boolStack.isEmpty())
         {
-            System.err.println("Functor Error: NOT logical functor no Boolean on the bool stack.");
+            FunCL.errln("Functor Error: NOT logical functor no Boolean on the bool stack.");
         }//end if
 
         String boolVal = funcl.boolStack.pop();
@@ -678,7 +682,7 @@ public class Functor
 
             if(funcl.paramStack.isEmpty())
             {
-                System.err.println("Error in xxx: param stack is empty!");
+                FunCL.errln("Error in xxx: param stack is empty!");
                 return;
             }//end if
 
@@ -686,7 +690,7 @@ public class Functor
             {
                 if(!Functor.isNum(funcl.paramStack.get(0)))
                 {
-                    System.err.println("Error in xxx: "+funcl.paramStack.get(0)+" is not a number!");
+                    FunCL.errln("Error in xxx: "+funcl.paramStack.get(0)+" is not a number!");
                 }//end if
 
                 return; //multiply single number => return number on param stack
@@ -703,12 +707,12 @@ public class Functor
                 }
                 else
                 {
-                      System.err.println("Error in xxx: "+funcl.paramStack.get(0)+" is not a number!");
+                      FunCL.errln("Error in xxx: "+funcl.paramStack.get(0)+" is not a number!");
                 }//end if
             }
             else
             {
-                System.err.println("Error in xxx: "+funcl.paramStack.get(0)+" is not a number!");
+                FunCL.errln("Error in xxx: "+funcl.paramStack.get(0)+" is not a number!");
             }//end if
 
         }//end MATHXXX
