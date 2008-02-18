@@ -1,5 +1,5 @@
 /*
- * @(#)Tokenize.java   1.10   2008-01-28
+ * @(#)Tokenize.java         1.11   2008-02-16
  *
  * Title: FunCL String Tokenizer.
  *
@@ -17,6 +17,8 @@
  * License license  agreement to use this software.
  *
  */
+
+package funcl;
 
 public final class Tokenize
 {

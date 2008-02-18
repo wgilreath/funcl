@@ -1,5 +1,5 @@
 /*
- * @(#)ObjectVector.java   1.00   2008-01-28
+ * @(#)ObjectVector.java     1.00   2008-01-28
  *
  * Title: ObjectVector - Vector of Object.
  *
@@ -17,6 +17,8 @@
  * License license  agreement to use this software.
  *
  */
+
+package funcl;
 
 public final class ObjectVector extends Object
 {
@@ -152,14 +154,20 @@ public final class ObjectVector extends Object
     {
         StringBuffer str = new StringBuffer();
 
-        str.append("< ");
+        str.append("[ ");
+        
         for(int x=0;x<this.count-1;x++)
         {
             str.append(element[x]);
             str.append(", ");
         }//end for
-        str.append(element[this.count-1]);
-        str.append(" >");
+        
+        if(this.count > 0)
+        {
+             str.append(element[this.count-1]);
+        }//end if
+        
+        str.append(" ]");
         return str.toString();
 
     }//end toString
