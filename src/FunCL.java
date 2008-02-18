@@ -1,17 +1,9 @@
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.IOException;
-
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.FileWriter;
-
 /*
- * @(#)FunCL.java   4.11   2008-01-28
+ * @(#)FunCL.java            0.500   2008-02-17
  *
  * Title: FunCL - Functor Clause Language.
  *
- * Description: Functional Programming Language Based on Functors; main class
+ * Description: Functional programming language based on functors; main class
  *     for main read-evaluate-update loop.
  *
  * Author: William F. Gilreath (wgilreath@gmail.com)
@@ -26,38 +18,130 @@ import java.io.FileWriter;
  * License license agreement to	use this software.
  *
  */
+package funcl;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.IOException;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.FileWriter;
 
 public final class FunCL
 {
     private FileWriter     functorWriter = null;
     private BufferedReader functorReader = null;
 
-    private boolean evalFlag   = false;
-    public  boolean exitFlag   = false;
-    public  boolean defineFlag = false; //default is eval mode
+    private static FileWriter traceWriter = null;
+    private static FileWriter errorWriter = null;
+    
+    public boolean evalFlag   = false;
+    public boolean exitFlag   = false;
+    public boolean defineFlag = false;
 
-    public final static String FUNCTOR_EXTENSION = ".fncl"; //move constants to FunclConstants ??
-    public final static String DEFAULT_PROMPT    = ":>";
-
-    public String  prompt  = null;
-    public String  functor = null;
+    public String prompt  = null;
+    public String functor = null;
 
     public final StringVector clauseStack = new StringVector();//c-stack
     public final StringVector evalStack   = new StringVector();//e-stack
     public final StringVector paramStack  = new StringVector();//p-stack
     public final StringVector exprStack   = new StringVector();//x-stack
     public final StringVector boolStack   = new StringVector();//b-stack
-    public final ObjectVector frameStack  = new ObjectVector();//f-stack  //create and use external vector for portability 3-1-2007
-
-    public FunCL()
+    public final ObjectVector frameStack  = new ObjectVector();//f-stack  
+       
+   
+    /* Feb 17 2008
+     * FunCL interpreter/vm command line arguments:
+     *
+     * -dump   : dump FunCL VM state before and after each interpreter routine
+     * -logerr : log all error messages to external "error.log" file
+     * -trace  : trace all non-error messages to external "trace.log" file
+     * 
+     */
+    
+    //command-line arguement attributes have "option" prefix in name
+    private static boolean optionTraceFlag  = false;
+    private static boolean optionLogErrFlag = false;
+    private static boolean optionDumpFlag   = false;
+    
+    public FunCL(final String[] args)
     {
+        //process command line arguements
+        for(int x=0;x<args.length;x++)
+        {
+            String arg = args[x];
+            
+            if(args[x].equals(FunCLConst.OPTION_DUMP))
+            {
+                FunCL.optionDumpFlag = true;
+            }
+            else
+            if(args[x].equals(FunCLConst.OPTION_LOGERR))
+            {
+                FunCL.optionLogErrFlag = true;
+            }
+            else
+            if(args[x].equals(FunCLConst.OPTION_TRACE))
+            {
+                FunCL.optionTraceFlag = true;
+            }
+            else
+            {
+                FunCL.errln("Unidentified command-line arguement:  "+arg);
+            }//end if
+            
+        }//end for
+               
     }//end constructor
 
-    private final static boolean DUMP = false;
+    private final void initializeExternalLog()
+    {
+        try
+        {
+            if(FunCL.optionTraceFlag)
+            {
+                this.traceWriter = new FileWriter(FunCLConst.FILE_TRACE_LOG);
+            }//end if
+            
+            if(FunCL.optionLogErrFlag)
+            {
+                this.errorWriter = new FileWriter(FunCLConst.FILE_ERROR_LOG);
+            }//end if
+        }
+        catch(IOException io)
+        {
+            System.err.println(io.getMessage()); //avoid infinite loop 
+        }//end try
+        
+    }//end initialzeExternalLog
+
+    private final void finalizeExternalLog()
+    {
+        try
+        {
+            if(FunCL.optionTraceFlag)
+            {
+                this.traceWriter.flush();
+                this.traceWriter.close();
+            }//end if
+            
+            if(FunCL.optionLogErrFlag)
+            {
+                this.errorWriter.flush();
+                this.errorWriter.close();
+            }//end if
+        }
+        catch(IOException io)
+        {
+            errln(io.getMessage());
+        }//end try
+        
+    }//end finalizeExternalLog
 
     public final void dumpState(String str)
     {
-        if(DUMP)
+        if(FunCL.optionDumpFlag)
         {
             System.out.println();
             System.out.println(str);
@@ -79,17 +163,44 @@ public final class FunCL
 
     public final void initialization()
     {
-        this.prompt = DEFAULT_PROMPT;
+        this.prompt = FunCLConst.DEFAULT_PROMPT;
+        
         //set default separator for file system ??
 
+        this.initializeExternalLog(); //initialize logging before all else
+        
         FunCL.printHeader();
+        
 
+        
+        //report dump/error/trace status
+        if(FunCL.optionDumpFlag)
+        {
+            putln("FunCL runtime status dump enabled.");
+            newln();
+        }//end if
+
+        if(FunCL.optionLogErrFlag)
+        {
+            putln("FunCL runtime error logging enabled.");
+            newln();
+        }//end if
+        
+        if(FunCL.optionTraceFlag)
+        {
+            putln("FunCL VM runtime trace logging enabled.");
+            newln();
+        }//end if
+        
     }//end initialization
 
     public final void finalization()
     {
-
         FunCL.printFooter();
+ 
+        //close writers for logging error, trace
+        this.finalizeExternalLog();
+        
     }//end finalization
 
     public final static String readline()
@@ -103,10 +214,16 @@ public final class FunCL
         }
         catch(IOException io)
         {
-            System.err.println("Error: "+io.getMessage());
+            errln("Error: "+io.getMessage());
             io.printStackTrace();
         }//end try
 
+        if(FunCL.optionTraceFlag) //write user input directly to log to avoid double-echo effect
+        {
+            FunCL.writeTraceLog(line); 
+            FunCL.writeTraceLog("\n\r");
+        }//end if
+        
         return line;
     }//end readline
 
@@ -122,7 +239,6 @@ public final class FunCL
 
        return result.toString();
    }//end trimLit
-
 
     public final static String[] tokenizeLine(String str)
     {
@@ -295,14 +411,11 @@ public final class FunCL
 
     }//end evaluateFunctor
 
-
     public final void loadFunctor()
     {
-        dumpState("### load functor: "+this.functor);
-
         //check if file exists, if not??  isExternalFunctor??
 
-        this.openReaderFile(this.functor + FunCL.FUNCTOR_EXTENSION);
+        this.openReaderFile(this.functor + FunCLConst.FUNCL_EXTENSION);
 
         this.writeFileToClause();
         this.closeReaderFile();
@@ -311,8 +424,6 @@ public final class FunCL
 
     public final void process()
     {
-        this.dumpState("## process ##");
-
         if(this.evalStack.isEmpty())
         {
             if(! this.clauseStack.isEmpty()) //clause stack is full
@@ -337,12 +448,9 @@ public final class FunCL
 
     public final void execute()
     {
-
         if(this.evalStack.isEmpty()) return;
 
         if(this.defineFlag) return; //do not execute if defining
-
-        this.dumpState("## execute ##");
 
         String word = this.evalStack.get(0);
 
@@ -352,8 +460,7 @@ public final class FunCL
         }
         else
         {
-            //ERROR
-            System.err.println(word+" is not a functor.");
+            errln(word+" is not a functor.");
             this.evalFlag = false;
             this.functor = null;
         }//end if
@@ -370,8 +477,9 @@ public final class FunCL
         }
         catch(IOException io)
         {
-            System.err.println(io.getMessage());
-        }
+            errln(io.getMessage());
+        }//end try
+        
     }//end openWriterFile
 
     public final void writeFile(final String token)
@@ -383,10 +491,36 @@ public final class FunCL
         }
         catch(IOException io)
         {
-            System.err.println(io.getMessage());
-        }
+            errln(io.getMessage());
+        }//end try
 
     }//end writeFile
+
+    public final static void writeErrorLog(final String str)
+    {
+        try
+        {
+           FunCL.errorWriter.write(str);
+        }
+        catch(IOException io)
+        {
+            System.err.println(io.getMessage()); //avoid error-infinite loop
+        }//end try
+
+    }//end writeErrorLog
+
+    public final static void writeTraceLog(final String str)
+    {
+        try
+        {
+           FunCL.traceWriter.write(str);
+        }
+        catch(IOException io)
+        {
+            System.err.println(io.getMessage()); //avoid error-infinite loop
+        }//end try
+
+    }//end writeTraceLog
 
     public final void writeEvalToFile()
     {
@@ -407,8 +541,9 @@ public final class FunCL
         }
         catch(IOException io)
         {
-            System.err.println(io.getMessage());
-        }
+            errln(io.getMessage());
+        }//end try
+        
     }//end closeWriterFile
 
     public final void openReaderFile(final String file)
@@ -419,16 +554,16 @@ public final class FunCL
         }
         catch(IOException io)
         {
-            System.err.println(io.getMessage());
+            errln(io.getMessage());
         }//end try
+        
     }//end openReaderFile
 
     public final void writeFileToClause()
     {
-        dumpState("## writeFileToClause");
-
         String token = null;
         int    count = 0;
+
         try
         {
             while((token = this.functorReader.readLine()) != null)
@@ -439,10 +574,9 @@ public final class FunCL
          }
          catch(IOException io)
          {
-                System.err.println(io.getMessage());
+                errln(io.getMessage());
          }//end try
 
-        this.dumpState("### after writeFileToClause");
     }//end writeFileToClause
 
     public final void closeReaderFile()
@@ -453,15 +587,14 @@ public final class FunCL
         }
         catch(IOException io)
         {
-            System.err.println(io.getMessage());
-        }
+            errln(io.getMessage());
+        }//end try
+        
     }//end closeReaderFile
 
 
     public final void define()
     {
-        this.dumpState("## define ##");
-
         //check for terminating condition
         if(clauseStack.isEmpty() && evalStack.size() == 1)
         {
@@ -469,7 +602,7 @@ public final class FunCL
             {
                 this.defineFlag = false; //back to eval mode
                 this.closeWriterFile();
-                System.out.println("Functor defined."); //put functor name on p-stack??
+                putln("Functor defined."); //put functor name on p-stack??
             }//end if
         }
         else
@@ -481,6 +614,8 @@ public final class FunCL
 
     public final void evaluate()
     {
+        this.dumpState(">>> Dump FunCL Virtual Machine <<<");
+        
         if(this.defineFlag)
         {
             this.define();
@@ -488,8 +623,6 @@ public final class FunCL
         }//end if
 
         if(this.functor == null) return;
-
-        this.dumpState("## evaluate ##");
 
         if(Functor.isInternalFunctor(this.functor))
         {
@@ -501,15 +634,15 @@ public final class FunCL
 
             //move clause stack to frame stack - save/create a stack frame.
             if(! this.clauseStack.isEmpty())
+            {
                 this.moveClauseToFrameStack();
-
+            }//end if
+            
             this.loadFunctor();
 
         }//end if
 
         this.functor = null; //reset functor word
-
-        this.dumpState("## after evaluate ##");
 
     }//end eval
 
@@ -535,7 +668,7 @@ public final class FunCL
         {
             this.evalFlag = true;
 
-            System.out.print(this.prompt);
+            put(this.prompt);
 
             String   line   = FunCL.readline();
             String[] tokens = FunCL.tokenizeLine(line);
@@ -544,56 +677,107 @@ public final class FunCL
 
             while(this.evalFlag)
             {
-
                 this.process();
                 this.execute();
                 this.evaluate();
-
             }//end while
 
-            this.dumpState("## post-eval loop ##");
         }//end while
 
     }//end interpret
 
-    //header information
-    public final static String TITLE     = "FunCL: The Functor Clause Language interpreter. ";
-    public final static String VERSION   = "Version Alpha 0.411";
-    public final static String COPYRIGHT = "Copyright (c) March 2007 ";
-    public final static String AUTHOR    = "William Gilreath (wgilreath@gmail.com)  ";
-    public final static String LICENSE   = "Released under the terms of the GNU General Public License (GPL).";
+    //added Feb 16 2008 - put/putln for adding logging/tracing of FunCL VM.
+    public final static void put(final String str)
+    {
+        System.out.print(str);
+        if(FunCL.optionTraceFlag)
+        {
+            //append message to trace log file 
+            FunCL.writeTraceLog(str);
+        }//end if
+        
+    }//end put
+    
+    public final static void putln(final String str)
+    {
+        System.out.println(str);
+ 
+        if(FunCL.optionTraceFlag)
+        {
+            //append message to trace log file 
+            FunCL.writeTraceLog(str);
+            FunCL.writeTraceLog("\n\r");
+        }//end if
 
-    public final static void printHeader()
+    }//end putln
+    
+    public final static void newln()
     {
         System.out.println();
-        System.out.print(TITLE);
-        System.out.println(VERSION);
-        System.out.print(COPYRIGHT);
-        System.out.println(AUTHOR);
-        System.out.println(LICENSE);
-        System.out.println();
+        
+        if(FunCL.optionTraceFlag)
+        {
+            //append newline to trace log file  
+            FunCL.writeTraceLog("\n\r");
+        }//end if
+        
+    }//end newln
+   
+    public final static void err(final String str)
+    {
+        System.err.print(str);
+        
+        if(FunCL.optionLogErrFlag)
+        {
+           //append string to error log file    
+           FunCL.writeErrorLog(str);
+        }//end if
+        
+    }//end err
+    
+    public final static void errln(final String str)
+    {
+        System.err.println(str);
+        
+        if(FunCL.optionLogErrFlag)
+        {
+            FunCL.writeErrorLog(str);
+            FunCL.writeErrorLog("\n\r");
+        }//end if
+        
+    }//end err
+    
+    public final static void printHeader()
+    {
+        newln();
+        put(FunCLConst.TITLE);
+        putln(FunCLConst.VERSION);
+        put(FunCLConst.COPYRIGHT);
+        putln(FunCLConst.AUTHOR);
+        putln(FunCLConst.LICENSE);
+        newln();
 
-        System.out.println();
-        System.out.println("Start FunCL interpreter.");
-        System.out.println();
+        newln();
+        putln(FunCLConst.FUNCL_MESSAGE_START);
+        newln();
     }//end printHeader
 
     public final static void printFooter()
     {
-        System.out.println();
-        System.out.println("Close FunCL interpreter.");
-        System.out.println();
+        newln();
+        putln(FunCLConst.FUNCL_MESSAGE_CLOSE);
+        newln();
     }//end printFooter
 
-    public static void main(String[] args)
-    {
-        FunCL funcl = new FunCL();
+    public static void main(final String[] args)
+    {       
+        FunCL funcl = new FunCL(args);
 
         funcl.initialization();
         funcl.interpret();
         funcl.finalization();
 
-        System.exit(0);  //System.exit(funcl.exitCode); ??
+        System.exit(0);  
 
     }//end main
 
