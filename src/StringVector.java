@@ -1,5 +1,5 @@
 /*
- * @(#)StringVector.java   1.00   2008-01-28
+ * @(#)StringVector.java     1.00   2008-01-28
  *
  * Title: StringVector - Vector of String.
  *
@@ -17,6 +17,8 @@
  * License license  agreement to use this software.
  *
  */
+
+package funcl;
 
 public final class StringVector extends Object implements Cloneable
 {
